@@ -1,0 +1,131 @@
+.pageContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.formSection {
+  background-color: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.listSection {
+  background-color: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.subtitle {
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-weight: 500;
+  color: #444;
+}
+
+.formGroup input,
+.formGroup select {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: #0070f3;
+  box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.1);
+}
+
+.calculatedAmount {
+  padding: 0.75rem;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.submitButton {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitButton:hover {
+  background-color: #0060df;
+}
+
+.assetList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.assetCard {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 1rem;
+  border: 1px solid #eee;
+}
+
+.assetName {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.assetDetails {
+  display: grid;
+  gap: 0.5rem;
+  color: #666;
+}
+
+.assetDetails p {
+  margin: 0;
+}
+
+.emptyState {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px dashed #ddd;
+} 
