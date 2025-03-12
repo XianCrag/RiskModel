@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, use } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@repo/ui/button";
-import styles from './page.module.css';
+import styles from './styles.module.css';
 
 type AssetType = 'stock' | 'other';
 
@@ -16,17 +17,50 @@ interface Asset {
   stockPrice?: number;
 }
 
-export default function AssetsPage() {
+interface AssetPortfolio {
+  id: string;
+  name: string;
+  version: number;
+  assets: Asset[];
+  createdAt: string;
+}
+
+const LOCAL_STORAGE_KEY = 'asset-portfolios';
+
+export default function AssetsDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter();
+  const { id } = use(params);
+  const [portfolio, setPortfolio] = useState<AssetPortfolio | null>(null);
   const [assetType, setAssetType] = useState<AssetType>('other');
   const [winRate, setWinRate] = useState('');
   const [amount, setAmount] = useState('');
   const [assetName, setAssetName] = useState('');
   const [stockQuantity, setStockQuantity] = useState('');
   const [stockPrice, setStockPrice] = useState('');
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    const savedPortfolios = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (savedPortfolios) {
+      try {
+        const portfolios: AssetPortfolio[] = JSON.parse(savedPortfolios);
+        const currentPortfolio = portfolios.find(p => p.id === id);
+        if (currentPortfolio) {
+          setPortfolio(currentPortfolio);
+        } else {
+          // Portfolio not found, redirect to list
+          router.push('/pages/assetsDetail');
+        }
+      } catch (error) {
+        console.error('Error loading portfolio:', error);
+      }
+    }
+  }, [id, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!portfolio) return;
+
     const newAsset: Asset = {
       id: Date.now().toString(),
       assetType,
@@ -38,8 +72,25 @@ export default function AssetsPage() {
         stockPrice: Number(stockPrice),
       }),
     };
+
+    // Get all portfolios
+    const savedPortfolios = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const portfolios: AssetPortfolio[] = savedPortfolios ? JSON.parse(savedPortfolios) : [];
     
-    setAssets([...assets, newAsset]);
+    // Update current portfolio
+    const updatedPortfolio = {
+      ...portfolio,
+      assets: [...portfolio.assets, newAsset],
+    };
+    
+    // Update portfolios in localStorage
+    const updatedPortfolios = portfolios.map(p => 
+      p.id === portfolio.id ? updatedPortfolio : p
+    );
+    
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedPortfolios));
+    setPortfolio(updatedPortfolio);
+    setHasChanges(true);
     
     // Reset form
     setAssetName('');
@@ -49,6 +100,47 @@ export default function AssetsPage() {
     setStockPrice('');
   };
 
+  const handleSave = () => {
+    if (!portfolio || !hasChanges) return;
+
+    // Get all portfolios
+    const savedPortfolios = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const portfolios: AssetPortfolio[] = savedPortfolios ? JSON.parse(savedPortfolios) : [];
+
+    // Create new version
+    const newPortfolio: AssetPortfolio = {
+      ...portfolio,
+      id: Date.now().toString(), // New ID for new version
+      version: portfolio.version + 1,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Add new version to portfolios
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([...portfolios, newPortfolio]));
+    
+    // Reset changes flag
+    setHasChanges(false);
+    
+    // Navigate to the new version
+    router.push(`/pages/assetsDetail/${newPortfolio.id}`);
+  };
+
+  const handleExportJson = () => {
+    if (!portfolio) return;
+    
+    const dataStr = JSON.stringify(portfolio, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${portfolio.name}_v${portfolio.version}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const calculateAmount = () => {
     if (assetType === 'stock' && stockQuantity && stockPrice) {
       const total = Number(stockQuantity) * Number(stockPrice);
@@ -56,11 +148,51 @@ export default function AssetsPage() {
     }
   };
 
+  if (!portfolio) {
+    return <div className={styles.loading}>加载中...</div>;
+  }
+
   return (
     <div className={styles.pageContainer}>
+      <div className={styles.header}>
+        <div className={styles.portfolioInfo}>
+          <div className={styles.titleSection}>
+            <div className={styles.titleRow}>
+              <span className={styles.label}>我的资产：</span>
+              <h1 className={styles.title}>{portfolio.name}</h1>
+            </div>
+            <div className={styles.versionRow}>
+              <span className={styles.label}>版本号：</span>
+              <span className={styles.version}>v{portfolio.version}</span>
+            </div>
+          </div>
+        </div>
+        <div className={styles.headerButtons}>
+          <button 
+            className={styles.newButton}
+            onClick={() => router.push('/pages/myAssets')}
+          >
+            新建资产组合
+          </button>
+          <button 
+            className={`${styles.saveButton} ${!hasChanges ? styles.saveButtonDisabled : ''}`}
+            onClick={handleSave}
+            disabled={!hasChanges}
+          >
+            保存并升级版本
+          </button>
+          <button 
+            className={styles.exportButton}
+            onClick={handleExportJson}
+          >
+            导出 JSON
+          </button>
+        </div>
+      </div>
+
       {/* Left side - Form */}
       <div className={styles.formSection}>
-        <h1 className={styles.title}>添加资产</h1>
+        <h2 className={styles.subtitle}>添加资产</h2>
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
             <label htmlFor="assetType">资产类型:</label>
@@ -156,9 +288,9 @@ export default function AssetsPage() {
             </div>
           )}
 
-          <Button appName="web" className={styles.submitButton}>
-            提交
-          </Button>
+          <button type="submit" className={styles.submitButton}>
+            添加资产
+          </button>
         </form>
       </div>
 
@@ -166,7 +298,7 @@ export default function AssetsPage() {
       <div className={styles.listSection}>
         <h2 className={styles.subtitle}>资产列表</h2>
         <div className={styles.assetList}>
-          {assets.map((asset) => (
+          {portfolio.assets.map((asset) => (
             <div key={asset.id} className={styles.assetCard}>
               <h3 className={styles.assetName}>{asset.assetName}</h3>
               <div className={styles.assetDetails}>
@@ -182,7 +314,7 @@ export default function AssetsPage() {
               </div>
             </div>
           ))}
-          {assets.length === 0 && (
+          {portfolio.assets.length === 0 && (
             <div className={styles.emptyState}>
               暂无资产，请添加新的资产。
             </div>
